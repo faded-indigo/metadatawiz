@@ -7,7 +7,7 @@
   "artifact": {
     "name": "HSPMetadataWizard-v0.8-windows-x64.exe",
     "distribution": "GitHub Release asset",
-    "sha256": "22DD46FCA5C76AE0611304E9AA8DB37EC76328747F81F6E1F54360F8E2514BD1"
+    "sha256": "FC92DC8BA78BF95A9E4FC9F1058BC87F9DDD029AA84E7A1D2A2A99F72D4C69B4"
   },
   "build": {
     "spec_file": "HSPMetadataWizard.spec",
@@ -16,7 +16,7 @@
     "platform": "Windows-11-10.0.26200-SP0"
   },
   "source": {
-    "release_source_commit": "43fd669+working-tree",
+    "release_source_commit": "309c66e",
     "release_notes": "release/RELEASE_NOTES-v0.8.md",
     "checksums_file": "release/SHA256SUMS.txt"
   }
