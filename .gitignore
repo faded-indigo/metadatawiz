@@ -27,6 +27,11 @@ sessions/
 scratch/
 *.log
 
+# Release artifacts are distributed via GitHub Releases, not committed binaries
+release/*.exe
+release/*.msi
+release/*.zip
+
 # IDE / OS noise
 .vscode/
 .idea/

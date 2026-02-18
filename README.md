@@ -2,9 +2,8 @@
 
 Batch edit PDF metadata (Title, Author, Subject, Keywords) safely on Windows.
 
-This repository is prepared to contain:
-- Source code
-- A prebuilt Windows executable for direct download
+This repository is prepared to contain source code only.
+Compiled binaries are distributed as GitHub Release assets.
 
 Current app version: `0.7` (`core/version.py`).
 
@@ -67,16 +66,28 @@ python -m pytest tests\test_rules.py -q
 Expected output:
 - `dist\HSPMetadataWizard.exe`
 
-Repository release artifact convention:
-- `release\HSPMetadataWizard-v0.7-windows-x64.exe`
+Repository release metadata convention:
+- `release\RELEASE_NOTES-vX.Y.md`
+- `release\PROVENANCE-vX.Y.json`
+- `release\SHA256SUMS.txt`
 
 ## Downloading The App From GitHub
 
-For this private repo workflow, the executable can be committed under `release/` for direct download.
+Download binaries from the repository's Releases page.
+The `main` branch does not track `.exe` files.
 
-Recommended long-term approach:
-1. Keep source in the repository.
-2. Publish binaries as GitHub Release assets.
+## Release Workflow (Versioned Builds)
+
+1. Bump `core/version.py`.
+2. Build via `HSPMetadataWizard.spec`.
+3. Compute SHA256 and update `release/SHA256SUMS.txt`.
+4. Update:
+   - `release/RELEASE_NOTES-vX.Y.md`
+   - `release/PROVENANCE-vX.Y.json`
+5. Commit source/release-metadata changes.
+6. Create annotated tag `vX.Y`.
+7. Push branch and tag.
+8. Create GitHub Release from tag and upload binary asset(s).
 
 ## Repository Layout
 
@@ -89,7 +100,7 @@ workers/     threaded scan/write workers
 tests/       tests
 resources/   icon/help assets
 tools/       bundled ExifTool runtime
-release/     committed distributable executable(s)
+release/     release notes + provenance + checksums (no committed binaries)
 ```
 
 ## Third-Party Components
