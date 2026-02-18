@@ -201,7 +201,7 @@ class MetadataHandler:
         p = _safe_path(filepath)
         try:
             enc = subprocess.run(
-                [self.exiftool_path, "-s", "-s", "-s", "-Encrypted", p],
+                [self.exiftool_path, "-s", "-s", "-s", "-Encrypted", "--", p],
                 capture_output=True, text=True, timeout=10, creationflags=_SUBPROC_FLAGS
             )
             if enc.returncode != 0:
@@ -211,7 +211,7 @@ class MetadataHandler:
                 return True, False, "Password protected"
 
             quick = subprocess.run(
-                [self.exiftool_path, "-json", "-fast", p],
+                [self.exiftool_path, "-json", "-fast", "--", p],
                 capture_output=True, text=True, timeout=10, creationflags=_SUBPROC_FLAGS
             )
             if quick.returncode != 0:
@@ -253,6 +253,7 @@ class MetadataHandler:
                     "-XMP-dc:Subject",
                     "-PDF:Keywords",
                     "-XMP-pdf:Keywords",
+                    "--",
                     p,
                 ],
                 capture_output=True, text=True, timeout=self.timeout_read, creationflags=_SUBPROC_FLAGS
@@ -375,7 +376,7 @@ class MetadataHandler:
                 else:
                     cmd.append(f"-{tag}={value}")
 
-            cmd.append(tmp)
+            cmd.extend(["--", tmp])
 
             res = subprocess.run(
                 cmd,
@@ -475,7 +476,7 @@ class MetadataHandler:
             cmd = [self.exiftool_path, "-overwrite_original"]
             for tag in tags:
                 cmd.append(f"-{tag}=")
-            cmd.append(tmp)
+            cmd.extend(["--", tmp])
 
             res = subprocess.run(
                 cmd,
