@@ -16,7 +16,7 @@ from PyQt6.QtWidgets import (
 from ui.constants import *  # centralised UI strings
 from ui.constants import MAIN_WINDOW_TITLE
 from ui.table_manager import FileTableManager
-from ui.dialogs import InfoDialog, ErrorsDialog, AboutDialog
+from ui.dialogs import InfoDialog, ErrorsDialog, AboutDialog, open_help_page
 from core.rules import process_keywords
 from core.rules import make_shib_token_from_folder
 
@@ -1209,9 +1209,7 @@ class MainWindow(QMainWindow):
         event.accept()
 
     def show_help(self):
-        manual = resource_path("resources/help.html")
-        if os.path.exists(manual):
-            QDesktopServices.openUrl(QUrl.fromLocalFile(manual))
+        if open_help_page():
             return
         QMessageBox.information(self, MENU_HELP, HELP_TEXT)
 

@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 from typing import List
+import tempfile
+from pathlib import Path
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QWidget, QTextEdit, QHBoxLayout, QApplication
 from PyQt6.QtCore import Qt, QUrl
 from infra.bundled import resource_path
@@ -11,6 +13,38 @@ from ui.constants import (
     MAIN_WINDOW_TITLE, DIALOG_ABOUT, BTN_CLOSE,
     TITLECARD_PROCEED, TITLECARD_AUTHOR, TITLECARD_VERSION, TITLECARD_HELP, TITLECARD_LICENSE
 )
+
+
+def _load_help_html() -> str:
+    """Load resources/help.html and substitute version/app name placeholders."""
+    path = resource_path("resources/help.html")
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            html = f.read()
+    except Exception:
+        html = "<h1>{app}</h1><p>Version: v{ver}</p>".format(app=APP_NAME, ver=APP_VERSION)
+
+    return html.replace("{{APP_VERSION}}", APP_VERSION).replace("{{APP_NAME}}", APP_NAME)
+
+
+def open_help_page() -> bool:
+    """
+    Render Help HTML with placeholders resolved and open it in the user's browser.
+    Returns True when a launch was attempted successfully.
+    """
+    try:
+        html = _load_help_html()
+        out_dir = Path(tempfile.gettempdir()) / "HSPMetadataWizard"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / "help_resolved.html"
+        out_path.write_text(html, encoding="utf-8")
+        return QDesktopServices.openUrl(QUrl.fromLocalFile(str(out_path)))
+    except Exception:
+        raw_path = resource_path("resources/help.html")
+        if Path(raw_path).exists():
+            return QDesktopServices.openUrl(QUrl.fromLocalFile(raw_path))
+        return False
+
 
 class TitleCardDialog(QDialog):
     """
@@ -47,7 +81,7 @@ class TitleCardDialog(QDialog):
         help_link.setTextFormat(Qt.TextFormat.RichText)
         help_link.setText(f'<a href="local:help">{TITLECARD_HELP}</a>')
         help_link.setOpenExternalLinks(False)
-        help_link.linkActivated.connect(lambda _href: QDesktopServices.openUrl(QUrl.fromLocalFile(resource_path("resources/help.html"))))
+        help_link.linkActivated.connect(lambda _href: open_help_page())
 
         license_link = QLabel(self)
         license_link.setTextFormat(Qt.TextFormat.RichText)
@@ -120,9 +154,7 @@ class AboutDialog(QDialog):
         help_link.setTextFormat(Qt.TextFormat.RichText)
         help_link.setText(f'<a href="local:help">{TITLECARD_HELP}</a>')
         help_link.setOpenExternalLinks(False)
-        help_link.linkActivated.connect(
-            lambda _href: QDesktopServices.openUrl(QUrl.fromLocalFile(resource_path("resources/help.html")))
-        )
+        help_link.linkActivated.connect(lambda _href: open_help_page())
 
         license_link = QLabel(self)
         license_link.setTextFormat(Qt.TextFormat.RichText)
@@ -176,21 +208,6 @@ class InfoDialog(QDialog):
         ok = QPushButton("Close"); ok.clicked.connect(self.accept)
         btns.addStretch(); btns.addWidget(copy); btns.addWidget(ok)
         v.addLayout(btns)
-
-    def _load_help_html() -> str:
-        """Load resources/help.html and substitute version/app name placeholders."""
-        path = resource_path("resources/help.html")
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                html = f.read()
-        except Exception:
-            # Fallback if file missing
-            html = "<h1>{app}</h1><p>Version: v{ver}</p>".format(app=APP_NAME, ver=APP_VERSION)
-
-        # Substitute placeholders
-        html = html.replace("{{APP_VERSION}}", APP_VERSION).replace("{{APP_NAME}}", APP_NAME)
-        return html
-
 
 class ErrorsDialog(QDialog):
     def __init__(self, failures: List[dict], parent=None):
