@@ -32,7 +32,7 @@ TITLECARD_LICENSE = "License"
 # ===== Group Box Titles =====
 GROUP_SOURCE = "Source Folder"
 GROUP_LEGEND = "Legend & Counts"
-GROUP_METADATA = "Metadata Edit Panel (applies to Selected rows)"
+GROUP_METADATA = "Metadata Edit Panel (applies to Checked rows)"
 GROUP_ACTIONS = "Actions"
 GROUP_PROGRESS = "Progress"
 
@@ -43,9 +43,11 @@ BTN_SELECT_ALL = "Select All"
 BTN_SELECT_NONE = "Select None"
 BTN_INVERT = "Invert"
 
+BTN_UPDATE = "Update"
 BTN_ADD = "Add"
 BTN_CLEAR = "Clear"
 BTN_COPY_FILENAME = "Copy filename → Title (All)"
+BTN_OPEN_FOLDER_PANEL = "Open folder"
 
 BTN_SORT_KEYWORDS = "Sort keywords alphabetically, shib-tags last"
 BTN_ADD_SHIB = "Add shib-[foldername] tag to Keywords"
@@ -96,6 +98,11 @@ STATUS_UNDO_CANCELLED = "Undo cancelled."
 STATUS_UNDO_FILE = "Undo {}/{}: {}"
 
 STATUS_OPERATION_CANCELLED = "Operation cancelled."
+STATUS_PREVIEW_ONLY = "Preview only. Check at least one file to modify."
+STATUS_NO_PREVIEW = "No preview file selected. Click a row to preview."
+STATUS_PREVIEW_LOCKED = "Preview file cannot be modified (protected or failed to load)."
+STATUS_SELECTION_BLOCKED = "One or more checked files cannot be modified. Uncheck protected/corrupted files to proceed."
+STATUS_MULTI_SELECTED = "(!) {} files selected"
 
 # ===== Confirmations and Warnings =====
 CONFIRM_TITLE_SET = "Set Title to '{}' for {} file(s)?"
@@ -116,6 +123,8 @@ MSG_NO_TEXT = "Enter a {} value first."
 MSG_NO_UNDO = "There is no previous batch to undo."
 MSG_UNDO_EMPTY = "Batch was empty."
 MSG_EXIT_WHILE_BUSY = "An operation is still running. Cancel it and exit?"
+MSG_RENAME_HINT = "To rename files, open the folder in Explorer."
+MSG_MULTIPLE_VALUES = "(Multiple values)"
 
 # ===== Tooltips =====
 TIP_BROWSE = "Select a folder containing PDF files"
@@ -126,22 +135,25 @@ TIP_SELECT_ALL = "Select all files in the table"
 TIP_SELECT_NONE = "Deselect all files"
 TIP_INVERT = "Invert the current selection"
 
-TIP_TITLE_ADD = "Set Title for all selected files to the value typed"
-TIP_TITLE_CLEAR = "Clear Title on all selected files (asks for confirmation)"
-TIP_COPY_FILENAME = "Set each selected file's Title to its own filename (without .pdf)"
+TIP_TITLE_UPDATE = "Replace Title on all checked files with this value. On multi-file selection, all checked files are updated."
+TIP_TITLE_CLEAR = "Clear Title on all checked files (asks for confirmation)"
+TIP_COPY_FILENAME = "Set each checked file's Title to its own filename (without .pdf)"
 
-TIP_AUTHOR_ADD = "Append Author to all selected files (de-duplicate tokens)"
-TIP_AUTHOR_CLEAR = "Clear Author on all selected files"
+TIP_AUTHOR_UPDATE = "Replace Author on all checked files with this value. On multi-file selection, all checked files are updated."
+TIP_AUTHOR_ADD = "Append Author on all checked files (token merge, case-insensitive de-dup). On multi-file selection, all checked files are updated."
+TIP_AUTHOR_CLEAR = "Clear Author on all checked files"
 
-TIP_SUBJECT_ADD = "Append Subject to all selected files (de-duplicate tokens)"
-TIP_SUBJECT_CLEAR = "Clear Subject on all selected files"
+TIP_SUBJECT_UPDATE = "Replace Subject on all checked files with this value. On multi-file selection, all checked files are updated."
+TIP_SUBJECT_ADD = "Append Subject on all checked files (token merge, case-insensitive de-dup). On multi-file selection, all checked files are updated."
+TIP_SUBJECT_CLEAR = "Clear Subject on all checked files"
 
-TIP_KEYWORDS_ADD = "Append Keywords to all selected files (de-duplicate + sort; shib-tags last)"
-TIP_KEYWORDS_CLEAR = "Clear Keywords on all selected files"
+TIP_KEYWORDS_UPDATE = "Replace Keywords on all checked files with canonicalized keyword text. On multi-file selection, all checked files are updated."
+TIP_KEYWORDS_ADD = "Append Keywords on all checked files (canonicalized: de-duplicate + sort; shib-tags last). On multi-file selection, all checked files are updated."
+TIP_KEYWORDS_CLEAR = "Clear Keywords on all checked files"
 
 TIP_SORT_KEYWORDS = "De-duplicate (case-insensitive), sort; shib-tags last."
-TIP_ADD_SHIB = "Add 'shib-[foldername]' tag to Keywords for selected files (asks for confirmation)"
-TIP_ADD_SHIB_1234 = "Add 'shib-1234' tag to Keywords for selected files (asks for confirmation)"
+TIP_ADD_SHIB = "Add 'shib-[foldername]' tag to Keywords for checked files (asks for confirmation)"
+TIP_ADD_SHIB_1234 = "Add 'shib-1234' tag to Keywords for checked files (asks for confirmation)"
 
 
 TIP_UNDO = "Undo the last batch of changes"

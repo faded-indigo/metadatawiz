@@ -2,39 +2,49 @@
 
 Batch edit PDF metadata (Title, Author, Subject, Keywords) safely on Windows.
 
-This repository is prepared to contain source code only.
-Compiled binaries are distributed as GitHub Release assets.
-
-Current app version: `0.7` (`core/version.py`).
+Current app version: `0.8` (`core/version.py`).
 
 ## What The App Does
 
 - Scans a source folder recursively for PDF files.
-- Displays editable metadata columns in this order:
+- Displays table columns in this order:
   `✓`, `Filename`, `Title`, `Keywords`, `Author`, `Subject`.
-- Applies batched metadata updates in a worker thread.
+- Applies batched metadata updates through worker threads.
 - Supports undo for the last batch.
 - Skips password-protected PDFs and reports file-level errors.
 
-## Metadata Behavior
+## v0.8 Interaction Model
 
-- `Title`:
-  - `Add` acts as replace.
-  - `Clear` removes the field.
-  - `Copy filename -> Title` sets Title to file stem.
-- `Author` and `Subject`:
-  - `Add` appends with token merge on `, ; |` and case-insensitive de-dup.
-  - `Clear` removes the field.
-- `Keywords`:
-  - `Add` canonicalizes via rules engine (NFKC normalize, comma split/trim, de-dup, natural sort).
-  - `shib-*` tags sort after non-shib tags.
-  - `shib-1234` is always last if present.
-  - `Sort keywords` normalizes input text only; click `Add` to write.
-  - Dedicated buttons add `shib-[foldername]` or `shib-1234`.
+- Only checked rows are actionable batch selection.
+- Clicked row is preview-only when nothing is checked.
+- Metadata panel is the only edit surface; table cells are read-only.
+- Switching checked rows or clicked row refreshes panel values immediately.
+- Multi-select panel values:
+  - Same value across all checked files: show value.
+  - Mixed values: show empty input with placeholder `(Multiple values)`.
+
+## Field Semantics
+
+- `Title`
+  - `Update`: replace Title on all checked files.
+  - `Clear`: clear Title (confirmation required).
+  - `Copy filename -> Title`: set Title to each file stem.
+- `Author`, `Subject`, `Keywords`
+  - `Update`: replace field on all checked files.
+  - `Add`: append/merge into existing field values.
+  - `Clear`: clear field (confirmation required).
+
+## Rules And Safety
+
+- `Update` and `Add` ignore empty input silently.
+- Per-field `Update`/`Add` buttons are gated by dirty edits from user input.
+- Multi-file confirmations are tracked per field and action (`Update`, `Add`, `Clear`) with "Don't ask again" settings.
+- If checked files include protected/corrupted PDFs, actions are disabled until those files are unchecked.
+- Keywords use canonical delimiter `", "` and existing normalization rules (dedupe, natural sort, `shib-*` ordering).
 
 ## Subject Tag Disambiguation
 
-Read path uses namespaced ExifTool tags and resolves Subject explicitly:
+Read path resolves Subject explicitly:
 - Prefer `PDF:Subject`
 - Fallback to `XMP-dc:Subject`
 
@@ -63,31 +73,34 @@ python -m pytest tests\test_rules.py -q
 .\.venv\Scripts\pyinstaller.exe --noconfirm HSPMetadataWizard.spec
 ```
 
-Expected output:
+Expected build output:
 - `dist\HSPMetadataWizard.exe`
 
-Repository release metadata convention:
-- `release\RELEASE_NOTES-vX.Y.md`
-- `release\PROVENANCE-vX.Y.json`
-- `release\SHA256SUMS.txt`
+For release upload, rename/copy to:
+- `HSPMetadataWizard-vX.Y-windows-x64.exe`
 
-## Downloading The App From GitHub
+## GitHub Releases
 
-Download binaries from the repository's Releases page.
-The `main` branch does not track `.exe` files.
+- Source code is tracked in this repository.
+- Compiled binaries should be uploaded as GitHub Release assets.
+- Release metadata files are kept in `release/`:
+  - `release\RELEASE_NOTES-vX.Y.md`
+  - `release\PROVENANCE-vX.Y.json`
+  - `release\SHA256SUMS.txt`
 
 ## Release Workflow (Versioned Builds)
 
 1. Bump `core/version.py`.
 2. Build via `HSPMetadataWizard.spec`.
-3. Compute SHA256 and update `release/SHA256SUMS.txt`.
-4. Update:
+3. Produce artifact: `HSPMetadataWizard-vX.Y-windows-x64.exe`.
+4. Compute SHA256 and update `release/SHA256SUMS.txt`.
+5. Add/update:
    - `release/RELEASE_NOTES-vX.Y.md`
    - `release/PROVENANCE-vX.Y.json`
-5. Commit source/release-metadata changes.
-6. Create annotated tag `vX.Y`.
-7. Push branch and tag.
-8. Create GitHub Release from tag and upload binary asset(s).
+6. Commit changes.
+7. Create annotated tag `vX.Y`.
+8. Push branch and tag.
+9. Create GitHub Release from tag and upload binary asset(s).
 
 ## Repository Layout
 
@@ -100,13 +113,13 @@ workers/     threaded scan/write workers
 tests/       tests
 resources/   icon/help assets
 tools/       bundled ExifTool runtime
-release/     release notes + provenance + checksums (no committed binaries)
+release/     release metadata and checksums
 ```
 
 ## Third-Party Components
 
 - ExifTool runtime is bundled in `tools/`.
-- Third-party licensing notices from that bundle are included in `tools/exiftool_files/LICENSE`.
+- Third-party licensing notices from that bundle are in `tools/exiftool_files/LICENSE`.
 
 ## License
 

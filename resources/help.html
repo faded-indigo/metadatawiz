@@ -2,328 +2,153 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>HSP Metadata Wizard — Project Specification (Version: v{{APP_VERSION}})</title>
+  <title>{{APP_NAME}} - Help (v{{APP_VERSION}})</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root{
-      --bg:#0b1220; --panel:#121b2e; --soft:#0f1626; --fg:#e6edf6;
-      --muted:#a7b1c2; --accent:#3c5b63; --accent-2:#a48cf2;
-      --border:#1f2a44; --good:#4ade80; --warn:#f59e0b; --bad:#f97316;
-      --cta-bg:#6e5619; --cta-text:#0b0b0b;
+      --bg:#0b1220;
+      --panel:#121b2e;
+      --soft:#0f1626;
+      --fg:#e6edf6;
+      --muted:#a7b1c2;
+      --accent:#5fb3d9;
+      --border:#1f2a44;
     }
-    html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);
-      font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans","Liberation Sans",sans-serif;}
-    main{max-width:860px;margin:2rem auto;padding:0 1rem 4rem;}
-    header{margin-bottom:1.25rem}
-    h1,h2,h3{color:#ffffff}
-    h1{font-size:1.85rem;margin:.25rem 0 1rem;letter-spacing:.2px}
-    h2{font-size:1.35rem;margin:1.75rem 0 .6rem;padding-bottom:.35rem;border-bottom:1px solid var(--border)}
-    h3{font-size:1.06rem;margin:1rem 0 .35rem}
-    p{margin:.35rem 0 1rem}
-    ul,ol{margin:.25rem 0 1rem 1.25rem}
-    li{margin:.25rem 0}
-    nav.toc{background:var(--panel);border:1px solid var(--border);
-      border-radius:.5rem;padding:1rem;margin:1rem 0 1.5rem}
-    nav.toc ol{margin:0; padding:0; list-style:decimal;}
-    nav.toc li{margin:.4rem 0; color:var(--muted)}
-    nav.toc a{color:var(--muted);text-decoration:none;}
-    nav.toc a:hover{color:#ffffff;text-decoration:underline}
-    .cta{display:inline-block; margin-top:1rem; text-decoration:none;
-      color:var(--cta-text); background:var(--cta-bg);
-      padding:.6rem 1rem; border-radius:.45rem; font-weight:600;
-      border:1px solid #b68f12;}
-    .cta:hover{filter:brightness(1.08)}
-    .pill{display:inline-block;background:var(--soft);padding:.15rem .55rem;
-      border-radius:999px;font-size:.85rem;margin-left:.35rem;color:var(--muted)}
-    .callout{background:var(--panel);border-left:3px solid var(--accent);
-      padding:.75rem 1rem;border-radius:.25rem;margin:.75rem 0 1rem}
-    code,kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;
-      background:var(--soft);padding:.08rem .35rem;border-radius:.25rem;color:#e7faff}
-    .kbd{border:1px solid var(--border);background:transparent;color:var(--muted)}
-    hr{border:none;border-top:1px solid var(--border);margin:1.2rem 0}
-    .muted{color:var(--muted)}
-    .toplink{display:block;margin-top:.75rem;font-size:.9rem;color:var(--muted)}
+    html,body{
+      margin:0;
+      padding:0;
+      background:var(--bg);
+      color:var(--fg);
+      font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    }
+    main{max-width:940px;margin:2rem auto;padding:0 1rem 3rem;}
+    h1{font-size:1.9rem;margin:.2rem 0 1rem;}
+    h2{font-size:1.3rem;margin:1.5rem 0 .55rem;border-bottom:1px solid var(--border);padding-bottom:.35rem;}
+    h3{font-size:1.05rem;margin:1rem 0 .4rem;}
+    p{margin:.3rem 0 .9rem;}
+    ul,ol{margin:.3rem 0 .9rem 1.2rem;}
+    li{margin:.25rem 0;}
+    .panel{background:var(--panel);border:1px solid var(--border);border-radius:.45rem;padding:.9rem 1rem;margin:.8rem 0 1rem;}
+    .muted{color:var(--muted);}
+    code,kbd{
+      font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+      background:var(--soft);
+      border-radius:.25rem;
+      padding:.08rem .32rem;
+    }
+    table{width:100%;border-collapse:collapse;margin:.5rem 0 1rem;}
+    th,td{border:1px solid var(--border);padding:.45rem .5rem;vertical-align:top;text-align:left;}
+    th{background:var(--panel);}
+    a{color:var(--accent);}
   </style>
 </head>
 <body>
 <main>
-  <header>
-    <h1>HSP Metadata Wizard <span class="pill">Project Specification — Version: v{{APP_VERSION}}</span></h1>
-    <p class="callout">
-      The HSP Metadata Wizard is a focused Windows utility for scanning folders of PDFs and batch-editing metadata—quickly, safely, and consistently—without touching file contents.
-      It’s built for expert users who value predictable behaviour and archival-grade outcomes.
-    </p>
-  </header>
+  <h1>{{APP_NAME}} <span class="muted">v{{APP_VERSION}}</span></h1>
+  <p class="panel">
+    Windows tool for scanning PDF folders and batch-editing metadata safely via ExifTool.
+    Writes are explicit, undoable, and designed for predictable archival workflows.
+  </p>
 
-  <nav class="toc">
-    <ol>
-      <br><li><a href="#project-summary">Project Summary</a></li>
-      <li><a href="#project-context">Project Context and Usage</a></li>
-      <li><a href="#objectives">Objectives</a></li>
-      <li><a href="#how-to">How-to</a></li>
-      <li><a href="#gui">GUI Layout and Components</a></li>
-      <li><a href="#functionality">Functionality and Interaction</a></li>
-      <li><a href="#validations">Required Validations and Conditions</a></li>
-      <li><a href="#platform">Platform, Packaging & Runtime</a></li>
-      <li><a href="#non-goals">Non-Goals & Known Limitations</a></li>
-    </ol>
-    <a class="cta" href="#how-to">How to: 3-minute guide</a>
-  </nav>
-  <section id="project-summary">
-    <h2>Project Summary</h2>
-    <p>
-      The <strong>HSP Metadata Wizard</strong> streamlines viewing and batch-editing PDF metadata across entire folders.
-      It enforces consistent naming and cataloguing so collections remain searchable and durable over time.
-      Buttons do exactly what they say; warnings inform without blocking; Undo is one click away.
-    </p>
-    <ul>
-      <li>Compact UI and predictable actions</li>
-      <li>Batch operations with progress, summaries, and Undo</li>
-      <li>Filename and metadata validation (non-blocking, informative)</li>
-      <li>Keyword canonicalisation (split/trim, de-dup, natural sort; <code>shib-*</code> handled specially)</li>
-      <li>Safe, atomic writes via ExifTool; keywords stored as a proper list</li>
-      <li>Network shares and long Windows paths supported</li>
-    </ul>
-    <a class="toplink" href="#">Back to top</a>
-  </section>
+  <h2>Quick Workflow</h2>
+  <ol>
+    <li>Select source folder, then load/scan.</li>
+    <li>Check files you want to modify in the table.</li>
+    <li>Edit values in the Metadata panel.</li>
+    <li>Use field buttons (`Update`, `Add`, `Clear`) to write.</li>
+    <li>Use `Undo last` if needed.</li>
+  </ol>
 
-  <section id="project-context">
-    <h2>Project Context and Usage</h2>
-    <p>
-      Built by the Harvard Sussex Program (HSP) for the Sussex Harvard Information Bank (SHIB), the Wizard focuses on
-      accurate, repeatable workflows rather than broad feature sets. The scope is intentionally narrow and the behaviour conservative,
-      so expert users get reliable outcomes every time.
-    </p>
-    <ul>
-      <li><strong>Internal focus:</strong> tailored to HSP digitisation practices</li>
-      <li><strong>Local data:</strong> no cloud sync; simple security model</li>
-      <li><strong>Pragmatic performance:</strong> tuned for our batch sizes and environments</li>
-      <li><strong>Licence:</strong> MIT, prioritising openness and clarity</li>
-    </ul>
-    <a class="toplink" href="#">Back to top</a>
-  </section>
+  <h2>Selection And Preview (v0.8)</h2>
+  <ul>
+    <li>Only <strong>checked rows</strong> are actionable for writes.</li>
+    <li>Clicked row is <strong>preview only</strong> when nothing is checked.</li>
+    <li>Table highlighting alone never triggers writes.</li>
+    <li>Panel refreshes immediately when checked rows or clicked row change.</li>
+  </ul>
 
-  <section id="objectives">
-    <h2>Objectives</h2>
-    <p>
-      Provide a small, trustworthy tool that keeps archival PDF metadata clean and consistent.
-      Actions are explicit, semantics are uniform, and writes are safe and reversible.
-    </p>
-    <ul>
-      <li>Scan a folder (recursively), list PDFs, and surface status (protected, corrupted, naming warnings)</li>
-      <li>Support four core fields: <em>Title</em>, <em>Author</em>, <em>Subject</em>, <em>Keywords</em></li>
-      <li>Offer clear verbs: <em>Add</em>, <em>Clear</em>, <em>Title from filename</em>, <em>Sort Keywords</em></li>
-      <li>Centralise keyword rules so results match across all paths</li>
-      <li>Write via atomic replace; keep a change journal for Undo</li>
-    </ul>
-    <a class="toplink" href="#">Back to top</a>
-  </section>
+  <h2>Editing Surface</h2>
+  <ul>
+    <li>The table is read-only.</li>
+    <li>The Metadata panel is the only editing surface.</li>
+    <li>All writes originate from panel buttons.</li>
+  </ul>
 
-  <section id="how-to">
-    <h2>How-to (3-minute guide)</h2>
-    <h3>Workflow: where things are and what to do</h3>
-    <p>
-      Start in the <em>Folder</em> panel: paste a path or click <em>Browse</em>, then <kbd class="kbd">Enter</kbd> to load.
-      Use the <em>File List</em> to select targets (All / None / Invert). Perform actions in the <em>Metadata</em> panel.
-      Buttons execute immediately with a confirmation where appropriate; <em>Undo last</em> reverses the previous batch.
-    </p>
-    <ol>
-      <li><strong>Open folder</strong> → scan runs recursively; PDFs appear in the table.</li>
-      <li><strong>Select files</strong> → choose exactly what you want to affect.</li>
-      <li><strong>Run operations</strong> → Add / Clear / Title from filename / Keyword tools.</li>
-      <li><strong>Review</strong> → progress + status; check <em>Show Errors</em> if needed; <em>Undo last</em> if you change your mind.</li>
-    </ol>
+  <h2>Multi-Select Display</h2>
+  <ul>
+    <li>Single checked file: panel shows exact values.</li>
+    <li>Multiple checked files:
+      <ul>
+        <li>If a field value matches across all checked files, that value is shown.</li>
+        <li>If values differ, input text is empty and placeholder is <code>(Multiple values)</code>.</li>
+      </ul>
+    </li>
+    <li>The placeholder text is informational only and is never written to PDFs.</li>
+  </ul>
 
-    <h3>Common tasks</h3>
+  <h2>Field Actions</h2>
+  <table>
+    <thead>
+      <tr><th>Field</th><th>Buttons</th><th>Behavior</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Title</td>
+        <td>Update, Clear, Copy filename -&gt; Title</td>
+        <td>Update replaces Title. Clear removes Title (confirmation). Copy filename sets Title from each file stem.</td>
+      </tr>
+      <tr>
+        <td>Author</td>
+        <td>Update, Add, Clear</td>
+        <td>Update replaces. Add merges tokens split on <code>, ; |</code> with case-insensitive de-dup.</td>
+      </tr>
+      <tr>
+        <td>Subject</td>
+        <td>Update, Add, Clear</td>
+        <td>Update replaces. Add merges tokens split on <code>, ; |</code> with case-insensitive de-dup.</td>
+      </tr>
+      <tr>
+        <td>Keywords</td>
+        <td>Update, Add, Clear, Sort, Add shib-[foldername], Add shib-1234</td>
+        <td>Keywords are canonicalized (normalize, split/trim, de-dup, natural sort, <code>shib-*</code> ordering, delimiter <code>", "</code>).</td>
+      </tr>
+    </tbody>
+  </table>
 
-    <h4>Add Title / Author / Subject</h4>
-    <ol>
-      <li>Type the value in the relevant input.</li>
-      <li>Select files in the table.</li>
-      <li>Click <em>Add</em>. The app writes immediately and shows progress.</li>
-    </ol>
+  <h2>Confirmation And Empty-Input Rules</h2>
+  <ul>
+    <li><code>Update</code> and <code>Add</code> ignore empty input silently.</li>
+    <li><code>Clear</code> always requires explicit confirmation.</li>
+    <li>Multi-file confirmations support "Don't ask again" per action and per field.</li>
+  </ul>
 
-    <h4>Title from filename</h4>
-    <ol>
-      <li>Select files.</li>
-      <li>Click <em>Title from filename</em>. Each Title becomes the filename without <code>.pdf</code>.</li>
-    </ol>
+  <h2>Protected Or Corrupted PDFs</h2>
+  <ul>
+    <li>Preview may still show available metadata, but panel indicates non-modifiable state.</li>
+    <li>If any checked file is protected/corrupted, relevant action buttons are disabled.</li>
+    <li>Uncheck blocked files before writing.</li>
+  </ul>
 
-    <h4>Add Keywords (canonicalised)</h4>
-    <ol>
-      <li>Type keywords separated by commas (e.g., <code>A.3.4.5, CBW</code>).</li>
-      <li>Select files → <em>Add</em>.</li>
-      <li>Result is canonical: comma+space, de-duplicated (case-insensitive), natural sort; <code>shib-*</code> tags (if present) go last, with <code>shib-1234</code> last of all.</li>
-    </ol>
+  <h2>After Writes And Undo</h2>
+  <ul>
+    <li>After update/add/clear/undo, table rows are re-read from disk.</li>
+    <li>Panel values are re-populated from current selection state.</li>
+    <li>ExifTool remains the only read/write mechanism.</li>
+  </ul>
 
-    <h4>Sort Keywords (no write on empty)</h4>
-    <ol>
-      <li>Click <em>Sort</em> to clean up the input text (split/trim/sort/de-dup).</li>
-      <li>To apply to files, click <em>Add</em> afterward.</li>
-    </ol>
+  <h2>Folder Access</h2>
+  <ul>
+    <li><code>Open pdf source folder</code> in Source panel opens the loaded source directory.</li>
+    <li>Metadata panel has a second, prominent <code>Open folder</code> button with rename guidance.</li>
+    <li>Rename operations are intentionally outside metadata write actions.</li>
+  </ul>
 
-    <h4>Add <code>shib-[foldername]</code> (source folder only)</h4>
-    <ol>
-      <li>Ensure the correct <em>source folder</em> is loaded.</li>
-      <li>Select files → click <em>Add shib-[foldername]</em> → confirm.</li>
-      <li>Writes immediately and is fully undoable. No fallback to other folders.</li>
-    </ol>
-
-    <h4>Add <code>shib-1234</code></h4>
-    <ol>
-      <li>Select files → click <em>Add shib-1234</em> → confirm.</li>
-      <li>Writes immediately; <code>shib-1234</code> is always the last keyword if present.</li>
-    </ol>
-
-    <h4>Clear fields (and Undo)</h4>
-    <ol>
-      <li>Select files → click the relevant <em>Clear</em> button → confirm.</li>
-      <li>Click <em>Undo last</em> to restore previous values (including empties).</li>
-    </ol>
-
-    <h4>Show Errors & what to do</h4>
-    <ol>
-      <li>Click <em>Show Errors</em> for a summary of protected/skipped items and failures.</li>
-      <li>For a locked file: close it in other apps and retry. For protected PDFs: they’re skipped by design.</li>
-    </ol>
-
-    <h3>At-a-glance semantics</h3>
-    <table>
-      <thead>
-        <tr><th>Field</th><th>Action</th><th>Effect</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Title</td><td>Add</td><td>Replace with input.</td></tr>
-        <tr><td>Title</td><td>Title from filename</td><td>Set to filename (without <code>.pdf</code>).</td></tr>
-        <tr><td>Title</td><td>Clear</td><td>Remove value (confirmation; undoable).</td></tr>
-
-        <tr><td>Author</td><td>Add</td><td>Append with merge: split on <code>, ; |</code>, case-insensitive de-dup, comma+space output.</td></tr>
-        <tr><td>Author</td><td>Clear</td><td>Remove value (confirmation; undoable).</td></tr>
-
-        <tr><td>Subject</td><td>Add</td><td>Append with merge (same as Author).</td></tr>
-        <tr><td>Subject</td><td>Clear</td><td>Remove value (confirmation; undoable).</td></tr>
-
-        <tr><td>Keywords</td><td>Add</td><td>Canonicalise: NFKC, split/trim, de-dup (CI), natural sort, comma+space; <code>shib-*</code> last; <code>shib-1234</code> last of all.</td></tr>
-        <tr><td>Keywords</td><td>Sort</td><td>Clean input text only (no write on empty); click <em>Add</em> to apply.</td></tr>
-        <tr><td>Keywords</td><td>Add shib-[foldername]</td><td>Add exactly one token from the source folder name; immediate; undoable.</td></tr>
-        <tr><td>Keywords</td><td>Add shib-1234</td><td>Add exactly that token; immediate; undoable.</td></tr>
-        <tr><td>Keywords</td><td>Clear</td><td>Remove all keywords (confirmation; undoable).</td></tr>
-      </tbody>
-    </table>
-    <a class="toplink" href="#">Back to top</a>
-  </section>
-
-  <section id="gui">
-    <h2>GUI Layout and Components</h2>
-
-    <h3>Main Window & Title Card</h3>
-    <p>
-      A small modal Title Card appears before the app loads, with a large <em>Proceed</em> button and links to <em>Help</em> and <em>License</em>.
-      This puts essentials within one click and sets expectations early.
-    </p>
-
-    <h3>Folder (Source) Panel</h3>
-    <p>
-      Paste a path or click <em>Browse</em>, press <kbd class="kbd">Enter</kbd> to load, then use <em>Rescan</em> as needed.
-      <em>Open folder</em> launches Explorer at the current source path. Scanning is recursive; only PDFs are listed.
-    </p>
-
-    <h3>Metadata Edit Panel</h3>
-    <p>
-      Title, Author, Subject, and Keywords each have <em>Add</em> and <em>Clear</em>.
-      Title also offers <em>Title from filename</em>. Keyword tools include <em>Sort</em>, <em>Add <code>shib-[foldername]</code></em>, and <em>Add <code>shib-1234</code></em>.
-      <em>Undo last</em> lives here for quick recovery.
-    </p>
-
-    <h3>File List Panel</h3>
-    <p>
-      Selection controls (All / None / Invert) and a resizable table. Columns (left→right):
-      <strong>✓, Filename, Title, Keywords, Author, Subject</strong>. Status icons and tooltips show protected PDFs and naming warnings.
-    </p>
-
-    <h3>Progress & Errors</h3>
-    <p>
-      A progress bar and per-file updates appear during writes. The <em>Show Errors</em> dialog summarises protected/skipped items and any failures,
-      and is robust even when lists are empty.
-    </p>
-    <a class="toplink" href="#">Back to top</a>
-  </section>
-
-  <section id="functionality">
-    <h2>Functionality and Interaction</h2>
-    <p>
-      Scans and writes run in background threads to keep the UI responsive. Every batch is journalled for Undo. Warnings inform; they don’t block.
-      Actions are explicit and consistent across fields.
-    </p>
-    <ul>
-      <li>Protected PDFs are identified and skipped with a clear reason.</li>
-      <li>Corrupted PDFs are flagged as failures; errors are readable.</li>
-      <li>Keywords are stored as a true list (multiple <code>-Keywords=</code> entries) to avoid quoted, comma-embedded strings.</li>
-    </ul>
-
-    <h3>Troubleshooting</h3>
-    <ul>
-      <li><strong>Protected PDF</strong>: the app skips these by design; remove protection to edit.</li>
-      <li><strong>Locked file</strong>: close it in viewers/sync tools and retry (“close and retry” advice shown).</li>
-      <li><strong>Naming warnings</strong>: advisory only—edits still apply. Fix filenames later as needed.</li>
-      <li><strong>Unexpected result</strong>: use <em>Undo last</em>; check <em>Show Errors</em> for details.</li>
-    </ul>
-    <a class="toplink" href="#">Back to top</a>
-  </section>
-
-  <section id="validations">
-    <h2>Required Validations and Conditions</h2>
-
-    <h3>Folder & PDF</h3>
-    <p>
-      The folder must exist and be readable. Only PDFs are ingested. Password-protected PDFs are skipped; corrupted files are reported.
-      Network paths and extended-length Windows paths are supported.
-    </p>
-
-    <h3>Filename Convention (warnings, not blockers)</h3>
-    <p class="muted">
-      Preferred forms: <code>YYYY-MMDD {brackets} filename.pdf</code> or <code>YYYY-MMDD [brackets] filename.pdf</code>. Multiple bracket blocks are allowed.
-    </p>
-    <ul>
-      <li><strong>Date:</strong> Year ≥ 1950; Month <code>00</code> or <code>01..12</code>; Day <code>00</code> or valid for that month; future dates warn.</li>
-      <li><strong>Brackets:</strong> One or more <code>{...}</code> or <code>[...]</code> must appear immediately after the date prefix, followed by a space.</li>
-      <li>Warnings never block metadata edits; they appear as icons/tooltips in the table.</li>
-    </ul>
-
-    <h3>Inputs & Confirms</h3>
-    <p>
-      Empty inputs are ignored for Add; Clear is explicit and confirmed. Repeated confirmations can use “Don’t ask me again,” saved in app settings.
-    </p>
-    <a class="toplink" href="#">Back to top</a>
-  </section>
-
-  <section id="platform">
-    <h2>Platform, Packaging & Runtime</h2>
-    <p>
-      Windows 10/11 (2018+ PCs). Python 3.11+, PyQt6, and a bundled ExifTool binary. Packaged as a single EXE with resources and tools included.
-      IO uses a thin ExifTool bridge with atomic replace and retries for share violations.
-    </p>
-    <ul>
-      <li><strong>Atomic writes:</strong> copy → edit temp → <code>fsync</code> → <em>os.replace</em> with retries.</li>
-      <li><strong>Explicit clears:</strong> done via empty assignments (e.g., <code>-Title=</code>), tracked for Undo.</li>
-      <li><strong>Logging:</strong> rotating logs for diagnostics; readable status messages in the UI.</li>
-    </ul>
-    <a class="toplink" href="#">Back to top</a>
-  </section>
-
-  <section id="non-goals">
-    <h2>Non-Goals & Known Limitations</h2>
-    <p>
-      The Wizard is intentionally focused. It avoids surprises and omits features that complicate archival workflows.
-    </p>
-    <ul>
-      <li>No PDF content editing; metadata only</li>
-      <li>No cloud sync, multi-user coordination, or background auto-saves</li>
-      <li>No implicit <code>shib-*</code> additions during generic Add/Sort—use the explicit buttons</li>
-      <li>Performance tuned for typical archival batches, not massive enterprise pipelines</li>
-    </ul>
-    <a class="toplink" href="#">Back to top</a>
-  </section>
+  <h2>Troubleshooting</h2>
+  <ul>
+    <li><strong>Write disabled:</strong> ensure at least one row is checked and no blocked files are checked.</li>
+    <li><strong>No visible change:</strong> check Errors dialog, then verify file permissions/locks.</li>
+    <li><strong>Need rollback:</strong> use <code>Undo last</code>.</li>
+  </ul>
 </main>
 </body>
 </html>

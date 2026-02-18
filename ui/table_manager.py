@@ -49,6 +49,7 @@ class FileTableManager(QObject):
             header.resizeSection(col, width)
 
         self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows) # select whole rows
+        self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.table.setAlternatingRowColors(True) # zebra striping
         self.table.itemChanged.connect(self._on_item_changed) # handle checkbox changes
         self.table.setSortingEnabled(True) # enable sorting by columns
@@ -82,7 +83,7 @@ class FileTableManager(QObject):
         elif file_data.get('filename_warning'):
             fname = TEXT_FILENAME_WARNING + " " + fname
             
-        fi = QTableWidgetItem(fname)
+        fi = self._readonly_item(fname)
         fi.setData(Qt.ItemDataRole.UserRole, file_data)
         
         if file_data.get('filename_warning'):
@@ -97,7 +98,7 @@ class FileTableManager(QObject):
         # Metadata columns (uniform)
         for field in METADATA_FIELDS:
             col = int(COL_INDEX[field])
-            self.table.setItem(row, col, QTableWidgetItem(file_data.get(field, "")))        
+            self.table.setItem(row, col, self._readonly_item(file_data.get(field, "")))
         return row
     
     def get_selected_files(self) -> List[Dict]:
@@ -153,7 +154,7 @@ class FileTableManager(QObject):
             # Uniform cell updates based on field->column mapping
             for field, value in metadata.items():
                 if field in COL_INDEX:
-                    self.table.setItem(row, int(COL_INDEX[field]), QTableWidgetItem(value or ""))
+                    self.table.setItem(row, int(COL_INDEX[field]), self._readonly_item(value or ""))
 
             # Update stored data blob on the filename cell
             fi = self.table.item(row, int(Col.FILENAME))
@@ -182,6 +183,17 @@ class FileTableManager(QObject):
                 if fd and (fd.get('filepath') or fd.get('path')) == filepath:
                     return row
         return None
+
+    def get_current_file_data(self) -> Optional[Dict]:
+        """Return file-data blob for the currently focused row, if any."""
+        row = self.table.currentRow()
+        if row < 0:
+            return None
+        fi = self.table.item(row, int(Col.FILENAME))
+        if not fi:
+            return None
+        fd = fi.data(Qt.ItemDataRole.UserRole)
+        return fd if isinstance(fd, dict) else None
     
     def get_counts(self) -> Dict[str, int]:
         """Get counts of total and selected files."""
@@ -193,3 +205,9 @@ class FileTableManager(QObject):
         """Handle checkbox state changes."""
         if item.column() == 0:
             self.selection_changed.emit()
+
+    @staticmethod
+    def _readonly_item(text: str) -> QTableWidgetItem:
+        item = QTableWidgetItem(text or "")
+        item.setFlags(Qt.ItemFlag.ItemIsSelectable | Qt.ItemFlag.ItemIsEnabled)
+        return item

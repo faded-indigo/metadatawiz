@@ -4,7 +4,7 @@ from __future__ import annotations
 import sys
 import os
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 
 from PyQt6.QtCore import Qt, QUrl, QSettings   
 from PyQt6.QtWidgets import (                  
@@ -58,6 +58,8 @@ class MainWindow(QMainWindow):
         # Info/errors buffers
         self.info_messages: List[str] = []
         self.last_failures: List[dict] = []
+        self._panel_context_signature: tuple = ("none",)
+        self.field_dirty: Dict[str, bool] = {}
 
         # UI
         self.init_ui()
@@ -66,6 +68,7 @@ class MainWindow(QMainWindow):
 
         # React to selection changes from the table
         self.table_manager.selection_changed.connect(self.update_counts)
+        self.table_manager.table.currentCellChanged.connect(self.on_current_row_changed)
 
         # Settings
         self.settings = QSettings("HSP", "MetadataWizard")
@@ -215,15 +218,36 @@ class MainWindow(QMainWindow):
         group = QGroupBox(GROUP_METADATA)
         g = QVBoxLayout(group)
 
-        # Title
+        self.multi_select_label = QLabel("")
+        self.multi_select_label.setStyleSheet("color: #b26a00; font-weight: bold;")
+        self.multi_select_label.setVisible(False)
+        g.addWidget(self.multi_select_label)
+
+        self.panel_status_label = QLabel(STATUS_NO_PREVIEW)
+        self.panel_status_label.setStyleSheet("color: #666666;")
+        self.panel_status_label.setWordWrap(True)
+        g.addWidget(self.panel_status_label)
+
+        # Prominent folder-open helper in the metadata panel
+        row = QHBoxLayout()
+        self.metadata_open_folder_button = QPushButton(BTN_OPEN_FOLDER_PANEL)
+        self.metadata_open_folder_button.clicked.connect(self.open_current_folder)
+        row.addWidget(self.metadata_open_folder_button)
+        hint = QLabel(MSG_RENAME_HINT)
+        hint.setStyleSheet("color: gray;")
+        row.addWidget(hint, 1)
+        g.addLayout(row)
+
+        # Title (Update + Clear only)
         row = QHBoxLayout()
         row.addWidget(QLabel(LABEL_TITLE))
         self.title_input = QLineEdit()
+        self.title_input.textEdited.connect(lambda _t: self._on_field_edited("title"))
         row.addWidget(self.title_input, 1)
 
-        self.title_add_button = QPushButton(BTN_ADD)
-        self.title_add_button.clicked.connect(self.on_add_title_replace)  # replace semantics for Title
-        row.addWidget(self.title_add_button)
+        self.title_update_button = QPushButton(BTN_UPDATE)
+        self.title_update_button.clicked.connect(lambda: self.on_update_field("title"))
+        row.addWidget(self.title_update_button)
 
         self.title_clear_button = QPushButton(BTN_CLEAR)
         self.title_clear_button.clicked.connect(lambda: self.on_clear_field("title"))
@@ -234,28 +258,55 @@ class MainWindow(QMainWindow):
         row.addWidget(self.copy_filename_all_button)
         g.addLayout(row)
 
-        # Author
+        # Author (Update / Add / Clear)
         row = QHBoxLayout()
         row.addWidget(QLabel(LABEL_AUTHOR))
-        self.author_input = QLineEdit(); row.addWidget(self.author_input, 1)
-        btn = QPushButton(BTN_ADD); btn.clicked.connect(lambda: self.on_add_field("author")); row.addWidget(btn)
-        btn = QPushButton(BTN_CLEAR); btn.clicked.connect(lambda: self.on_clear_field("author")); row.addWidget(btn)
+        self.author_input = QLineEdit()
+        self.author_input.textEdited.connect(lambda _t: self._on_field_edited("author"))
+        row.addWidget(self.author_input, 1)
+        self.author_update_button = QPushButton(BTN_UPDATE)
+        self.author_update_button.clicked.connect(lambda: self.on_update_field("author"))
+        row.addWidget(self.author_update_button)
+        self.author_add_button = QPushButton(BTN_ADD)
+        self.author_add_button.clicked.connect(lambda: self.on_add_field("author"))
+        row.addWidget(self.author_add_button)
+        self.author_clear_button = QPushButton(BTN_CLEAR)
+        self.author_clear_button.clicked.connect(lambda: self.on_clear_field("author"))
+        row.addWidget(self.author_clear_button)
         g.addLayout(row)
 
-        # Subject
+        # Subject (Update / Add / Clear)
         row = QHBoxLayout()
         row.addWidget(QLabel(LABEL_SUBJECT))
-        self.subject_input = QLineEdit(); row.addWidget(self.subject_input, 1)
-        btn = QPushButton(BTN_ADD); btn.clicked.connect(lambda: self.on_add_field("subject")); row.addWidget(btn)
-        btn = QPushButton(BTN_CLEAR); btn.clicked.connect(lambda: self.on_clear_field("subject")); row.addWidget(btn)
+        self.subject_input = QLineEdit()
+        self.subject_input.textEdited.connect(lambda _t: self._on_field_edited("subject"))
+        row.addWidget(self.subject_input, 1)
+        self.subject_update_button = QPushButton(BTN_UPDATE)
+        self.subject_update_button.clicked.connect(lambda: self.on_update_field("subject"))
+        row.addWidget(self.subject_update_button)
+        self.subject_add_button = QPushButton(BTN_ADD)
+        self.subject_add_button.clicked.connect(lambda: self.on_add_field("subject"))
+        row.addWidget(self.subject_add_button)
+        self.subject_clear_button = QPushButton(BTN_CLEAR)
+        self.subject_clear_button.clicked.connect(lambda: self.on_clear_field("subject"))
+        row.addWidget(self.subject_clear_button)
         g.addLayout(row)
 
-        # Keywords
+        # Keywords (Update / Add / Clear)
         row = QHBoxLayout()
         row.addWidget(QLabel(LABEL_KEYWORDS))
-        self.keywords_input = QLineEdit(); row.addWidget(self.keywords_input, 1)
-        btn = QPushButton(BTN_ADD); btn.clicked.connect(lambda: self.on_add_field("keywords")); row.addWidget(btn)
-        btn = QPushButton(BTN_CLEAR); btn.clicked.connect(lambda: self.on_clear_field("keywords")); row.addWidget(btn)
+        self.keywords_input = QLineEdit()
+        self.keywords_input.textEdited.connect(lambda _t: self._on_field_edited("keywords"))
+        row.addWidget(self.keywords_input, 1)
+        self.keywords_update_button = QPushButton(BTN_UPDATE)
+        self.keywords_update_button.clicked.connect(lambda: self.on_update_field("keywords"))
+        row.addWidget(self.keywords_update_button)
+        self.keywords_add_button = QPushButton(BTN_ADD)
+        self.keywords_add_button.clicked.connect(lambda: self.on_add_field("keywords"))
+        row.addWidget(self.keywords_add_button)
+        self.keywords_clear_button = QPushButton(BTN_CLEAR)
+        self.keywords_clear_button.clicked.connect(lambda: self.on_clear_field("keywords"))
+        row.addWidget(self.keywords_clear_button)
         g.addLayout(row)
 
         # Keyword tools
@@ -290,6 +341,31 @@ class MainWindow(QMainWindow):
         note.setStyleSheet("color: gray; font-size: 9pt;")
         note.setWordWrap(True)
         g.addWidget(note)
+
+        self.field_inputs = {
+            "title": self.title_input,
+            "author": self.author_input,
+            "subject": self.subject_input,
+            "keywords": self.keywords_input,
+        }
+        self.field_update_buttons = {
+            "title": self.title_update_button,
+            "author": self.author_update_button,
+            "subject": self.subject_update_button,
+            "keywords": self.keywords_update_button,
+        }
+        self.field_add_buttons = {
+            "author": self.author_add_button,
+            "subject": self.subject_add_button,
+            "keywords": self.keywords_add_button,
+        }
+        self.field_clear_buttons = {
+            "title": self.title_clear_button,
+            "author": self.author_clear_button,
+            "subject": self.subject_clear_button,
+            "keywords": self.keywords_clear_button,
+        }
+        self.field_dirty = {f: False for f in self.field_inputs}
 
         layout.addWidget(group)
 
@@ -342,15 +418,26 @@ class MainWindow(QMainWindow):
         self.select_none_button.setToolTip(TIP_SELECT_NONE)
         self.invert_button.setToolTip(TIP_INVERT)
 
-        self.title_add_button.setToolTip(TIP_TITLE_ADD)
+        self.metadata_open_folder_button.setToolTip(TIP_OPEN_FOLDER)
+        self.title_update_button.setToolTip(TIP_TITLE_UPDATE)
         self.title_clear_button.setToolTip(TIP_TITLE_CLEAR)
         self.copy_filename_all_button.setToolTip(TIP_COPY_FILENAME)
 
-        # Author/Subject/Keywords
-        # find the two buttons by order is brittle; so we rely on above labels for title only.
+        self.author_update_button.setToolTip(TIP_AUTHOR_UPDATE)
+        self.author_add_button.setToolTip(TIP_AUTHOR_ADD)
+        self.author_clear_button.setToolTip(TIP_AUTHOR_CLEAR)
+
+        self.subject_update_button.setToolTip(TIP_SUBJECT_UPDATE)
+        self.subject_add_button.setToolTip(TIP_SUBJECT_ADD)
+        self.subject_clear_button.setToolTip(TIP_SUBJECT_CLEAR)
+
+        self.keywords_update_button.setToolTip(TIP_KEYWORDS_UPDATE)
+        self.keywords_add_button.setToolTip(TIP_KEYWORDS_ADD)
+        self.keywords_clear_button.setToolTip(TIP_KEYWORDS_CLEAR)
 
         self.sort_keywords_button.setToolTip(TIP_SORT_KEYWORDS)
         self.ensure_folder_button.setToolTip(TIP_ADD_SHIB)
+        self.add_shib_1234_button.setToolTip(TIP_ADD_SHIB_1234)
 
         self.undo_button.setToolTip(TIP_UNDO)
         self.cancel_button.setToolTip(TIP_CANCEL)
@@ -418,8 +505,11 @@ class MainWindow(QMainWindow):
                 msg += STATUS_LOADED_WITH_WARNINGS.format(stats["warnings"])
             self.add_info(msg)
 
-        self.update_ui_state()
         self.update_counts()
+        if self.table_manager.table.rowCount() > 0 and self.table_manager.table.currentRow() < 0:
+            self.table_manager.table.setCurrentCell(0, int(Col.FILENAME))
+        self._refresh_metadata_panel(force=True)
+        self.update_ui_state()
 
     def on_loader_error(self, error_msg: str):
         QMessageBox.critical(self, DIALOG_ERROR, error_msg)
@@ -474,6 +564,8 @@ class MainWindow(QMainWindow):
         self.batch_progress.setValue(0) # Reset batch progress
         self.file_progress.setValue(0) # Reset file progress
         self.file_status_label.setText("") # Reset file status label
+        self._panel_context_signature = ("none",)
+        self._refresh_metadata_panel(force=True)
         self.loader_manager.start_loading(folder) # Start the loader thread
         self._on_source_text_changed(self.folder_input.text()) # Update button state
 
@@ -505,6 +597,7 @@ class MainWindow(QMainWindow):
             stats = self.loader_manager.get_statistics()
             self.warnings_label.setText(LABEL_WARNINGS.format(stats["warnings"]))
             self.protected_label.setText(LABEL_PROTECTED.format(stats["protected"]))
+        self._refresh_metadata_panel()
         self.update_ui_state()
 
     def update_ui_state(self):
@@ -513,6 +606,10 @@ class MainWindow(QMainWindow):
         writer_active = bool(self.writer_thread and self.writer_thread.isRunning())
         undo_active = bool(self.undo_thread and self.undo_thread.isRunning())
         busy = loader_active or writer_active or undo_active
+        checked_files = self.get_selected_files()
+        has_checked = bool(checked_files)
+        blocked, _msg = self._selection_has_blockers(checked_files)
+        can_modify_checked = has_checked and (not blocked) and (not busy)
 
         self.select_all_button.setEnabled(has_files and not busy)
         self.select_none_button.setEnabled(has_files and not busy)
@@ -520,9 +617,120 @@ class MainWindow(QMainWindow):
         self.undo_button.setEnabled(self.undo_manager.can_undo() and not busy)
         self.cancel_button.setEnabled(busy)
 
+        self.open_folder_button.setEnabled(bool((self.folder_input.text() or "").strip() and os.path.isdir((self.folder_input.text() or "").strip())))
+        self.metadata_open_folder_button.setEnabled(self.open_folder_button.isEnabled())
+
+        # Field actions: only checked rows are actionable.
+        for field, button in self.field_update_buttons.items():
+            button.setEnabled(can_modify_checked and self.field_dirty.get(field, False))
+        for field, button in self.field_add_buttons.items():
+            button.setEnabled(can_modify_checked and self.field_dirty.get(field, False))
+        for _field, button in self.field_clear_buttons.items():
+            button.setEnabled(can_modify_checked)
+
+        self.copy_filename_all_button.setEnabled(can_modify_checked)
+        self.sort_keywords_button.setEnabled((not busy) and bool((self.keywords_input.text() or "").strip()))
+        self.ensure_folder_button.setEnabled(can_modify_checked)
+        self.add_shib_1234_button.setEnabled(can_modify_checked)
+
+    def on_current_row_changed(self, _row: int, _col: int, _prev_row: int, _prev_col: int):
+        self._refresh_metadata_panel()
+
+    def _on_field_edited(self, field: str):
+        self.field_dirty[field] = True
+        self.update_ui_state()
+
+    def _reset_field_dirty_flags(self):
+        for field in self.field_dirty:
+            self.field_dirty[field] = False
+
+    def _selection_has_blockers(self, files: List[Dict]) -> Tuple[bool, str]:
+        if not files:
+            return False, ""
+        blocked = [
+            f for f in files
+            if f.get("is_protected") or f.get("is_corrupted") or (f.get("error_message") and not f.get("filename_warning"))
+        ]
+        if not blocked:
+            return False, ""
+        return True, STATUS_SELECTION_BLOCKED
+
+    def _refresh_metadata_panel(self, force: bool = False):
+        checked = self.get_selected_files()
+        preview = self.table_manager.get_current_file_data()
+        checked_paths = tuple(sorted((fd.get("filepath") or fd.get("path") or "") for fd in checked))
+        preview_path = (preview or {}).get("filepath") or (preview or {}).get("path") or ""
+        signature = ("checked", checked_paths) if checked else ("preview", preview_path) if preview else ("none",)
+
+        if not force and signature == self._panel_context_signature:
+            self._set_panel_status_labels(checked, preview)
+            return
+
+        self._panel_context_signature = signature
+        self._reset_field_dirty_flags()
+
+        if checked:
+            self._populate_inputs_from_files(checked)
+        elif preview:
+            self._populate_inputs_from_files([preview])
+        else:
+            for field, line in self.field_inputs.items():
+                line.setText("")
+                line.setPlaceholderText("")
+                self.field_dirty[field] = False
+
+        self._set_panel_status_labels(checked, preview)
+        self.update_ui_state()
+
+    def _populate_inputs_from_files(self, files: List[Dict]):
+        for field, line in self.field_inputs.items():
+            values = [str((fd.get(field) or "")).strip() for fd in files]
+            if len(files) == 1:
+                line.setText(values[0])
+                line.setPlaceholderText("")
+                continue
+
+            uniq = {v for v in values}
+            if len(uniq) == 1:
+                line.setText(values[0] if values else "")
+                line.setPlaceholderText("")
+            else:
+                line.setText("")
+                line.setPlaceholderText(MSG_MULTIPLE_VALUES)
+
+    def _set_panel_status_labels(self, checked: List[Dict], preview: Optional[Dict]):
+        checked_count = len(checked)
+        self.multi_select_label.setVisible(checked_count > 1)
+        self.multi_select_label.setText(STATUS_MULTI_SELECTED.format(checked_count) if checked_count > 1 else "")
+
+        if checked_count > 0:
+            blocked, message = self._selection_has_blockers(checked)
+            if blocked:
+                self.panel_status_label.setText(message)
+                self.panel_status_label.setStyleSheet("color: #aa3333;")
+            else:
+                self.panel_status_label.setText("")
+            return
+
+        if preview:
+            locked_preview = bool(preview.get("is_protected") or preview.get("is_corrupted") or preview.get("error_message"))
+            if locked_preview:
+                self.panel_status_label.setText(STATUS_PREVIEW_LOCKED)
+                self.panel_status_label.setStyleSheet("color: #aa3333;")
+            else:
+                self.panel_status_label.setText(STATUS_PREVIEW_ONLY)
+                self.panel_status_label.setStyleSheet("color: #666666;")
+            return
+
+        self.panel_status_label.setText(STATUS_NO_PREVIEW)
+        self.panel_status_label.setStyleSheet("color: #666666;")
+
     def _on_source_text_changed(self, text: str):
         path = (text or "").strip()
-        self.open_folder_button.setEnabled(bool(path and os.path.isdir(path)))
+        enabled = bool(path and os.path.isdir(path))
+        self.open_folder_button.setEnabled(enabled)
+        if hasattr(self, "metadata_open_folder_button"):
+            self.metadata_open_folder_button.setEnabled(enabled)
 
     def open_current_folder(self):
         path = (self.folder_input.text() or "").strip()
@@ -553,6 +761,10 @@ class MainWindow(QMainWindow):
         if not files:
             QMessageBox.information(self, DIALOG_INFORMATION, MSG_NO_SELECTION)
             return
+        blocked, _msg = self._selection_has_blockers(files)
+        if blocked:
+            self.update_ui_state()
+            return
 
         folder_path = (self.current_folder or "").strip()
         if not folder_path or not os.path.isdir(folder_path):
@@ -582,6 +794,10 @@ class MainWindow(QMainWindow):
         files = self.get_selected_files()
         if not files:
             QMessageBox.information(self, DIALOG_INFORMATION, MSG_NO_SELECTION)
+            return
+        blocked, _msg = self._selection_has_blockers(files)
+        if blocked:
+            self.update_ui_state()
             return
 
         token = "shib-1234"
@@ -646,29 +862,57 @@ class MainWindow(QMainWindow):
         self.has_shown_subfolder_warning = True
         return True
 
-    # ---- Add/Clear actions ----
+    # ---- Field actions ----
 
-    def on_add_title_replace(self):
+    def _confirm_multi_field_action(self, action: str, field: str, file_count: int) -> bool:
+        if file_count <= 1:
+            return True
+        f = field.capitalize()
+        action_name = action.capitalize()
+        if action == "clear":
+            text = f"{action_name} {f} for {file_count} checked file(s)? This can be undone with Undo last."
+            icon = QMessageBox.Icon.Warning
+        elif action == "add":
+            text = f"{action_name} to {f} for {file_count} checked file(s)?"
+            icon = QMessageBox.Icon.Question
+        else:
+            text = f"{action_name} {f} for {file_count} checked file(s)?"
+            icon = QMessageBox.Icon.Question
+        return self.confirm_with_dont_ask(
+            settings_key=f"confirm/multi/{action}_{field}",
+            title=CONFIRM_HEADER,
+            text=text,
+            icon=icon,
+        )
+
+    def on_update_field(self, field: str):
         files = self.get_selected_files()
         if not files:
-            QMessageBox.information(self, DIALOG_INFORMATION, MSG_NO_SELECTION)
             return
-        text = self.title_input.text().strip()
+        blocked, _msg = self._selection_has_blockers(files)
+        if blocked:
+            self.update_ui_state()
+            return
+
+        line: QLineEdit = self.field_inputs[field]
+        text = (line.text() or "").strip()
         if not text:
-            QMessageBox.information(self, DIALOG_INFORMATION, MSG_NO_TEXT.format("Title"))
+            return  # ignore empty input silently
+
+        if not self._confirm_multi_field_action("update", field, len(files)):
             return
-        if QMessageBox.question(self, CONFIRM_HEADER,
-                                CONFIRM_TITLE_SET.format(text, len(files))) != QMessageBox.StandardButton.Yes:
-            return
-        # Direct replace op for Title
-        self.writer_thread = apply_replace(files, {"title": text}, self)
+
+        self.writer_thread = apply_replace(files, {field: text}, self)
         self._connect_writer_signals()
         self._start_writer_with_progress(len(files), STATUS_WRITE_START)
 
     def on_copy_filename_all(self):
         files = self.get_selected_files()
         if not files:
-            QMessageBox.information(self, DIALOG_INFORMATION, MSG_NO_SELECTION)
+            return
+        blocked, _msg = self._selection_has_blockers(files)
+        if blocked:
+            self.update_ui_state()
             return
         if not self._maybe_show_subfolder_warning_once():
             return
@@ -682,19 +926,16 @@ class MainWindow(QMainWindow):
     def on_add_field(self, field: str):
         files = self.get_selected_files()
         if not files:
-            QMessageBox.information(self, DIALOG_INFORMATION, MSG_NO_SELECTION)
             return
-        line: QLineEdit = getattr(self, f"{field}_input")
-        text = line.text().strip()
+        blocked, _msg = self._selection_has_blockers(files)
+        if blocked:
+            self.update_ui_state()
+            return
+        line: QLineEdit = self.field_inputs[field]
+        text = (line.text() or "").strip()
         if not text:
-            QMessageBox.information(self, DIALOG_INFORMATION, MSG_NO_TEXT.format(field.capitalize()))
-            return
-        if not self.confirm_with_dont_ask( 
-            settings_key=f"confirm/add_{field}",
-            title=CONFIRM_HEADER,
-            text=CONFIRM_ADD_FIELD.format(field.capitalize(), len(files)),
-            icon=QMessageBox.Icon.Question,
-        ):
+            return  # ignore empty input silently
+        if not self._confirm_multi_field_action("add", field, len(files)):
             return
         self.writer_thread = append_field(files, field, text, self)
         self._connect_writer_signals()
@@ -704,15 +945,23 @@ class MainWindow(QMainWindow):
     def on_clear_field(self, field: str):
         files = self.get_selected_files()
         if not files:
-            QMessageBox.information(self, DIALOG_INFORMATION, MSG_NO_SELECTION)
             return
-        if not self.confirm_with_dont_ask(
-                settings_key=f"confirm/clear_{field}",
-                title=CONFIRM_HEADER,
-                text=CONFIRM_CLEAR_FIELD.format(field.capitalize(), len(files)),
-                icon=QMessageBox.Icon.Warning,
-        ):
+        blocked, _msg = self._selection_has_blockers(files)
+        if blocked:
+            self.update_ui_state()
             return
+        if len(files) == 1:
+            if QMessageBox.question(
+                self,
+                CONFIRM_HEADER,
+                CONFIRM_CLEAR_FIELD.format(field.capitalize(), len(files)),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Cancel,
+            ) != QMessageBox.StandardButton.Yes:
+                return
+        elif not self._confirm_multi_field_action("clear", field, len(files)):
+            return
+
         self.writer_thread = clear_field(files, field, self)
         self._connect_writer_signals()
         self._start_writer_with_progress(len(files), STATUS_WRITE_START)
@@ -769,24 +1018,37 @@ class MainWindow(QMainWindow):
         self.last_failures = failures[:]  # remember for later
         if failures:
             self.show_errors_dialog(failures)  # auto-open on errors
-        self._refresh_rows_after_write()
+        self._refresh_rows_after_write(journal)
+        self._refresh_metadata_panel(force=True)
         self.writer_thread = None
         self.update_ui_state()
         self.undo_button.setEnabled(self.undo_manager.can_undo())
 
-    def _refresh_rows_after_write(self):
+    def _refresh_rows_after_write(self, journal: Optional[List] = None):
         try:
             handler = MetadataHandler()
         except FileNotFoundError:
             return
-        selected = self.get_selected_files()
-        paths = []
+
+        paths: List[str] = []
         seen = set()
-        for fd in selected:
-            path = fd.get("filepath") or fd.get("path")
+
+        # Prefer exact file list from successful writes for consistency under active UI changes.
+        for entry in (journal or []):
+            if not isinstance(entry, (list, tuple)) or not entry:
+                continue
+            path = str(entry[0] or "")
             if path and path not in seen:
                 seen.add(path)
                 paths.append(path)
+
+        # Fallback for legacy/no-journal cases.
+        if not paths:
+            for fd in self.get_selected_files():
+                path = fd.get("filepath") or fd.get("path")
+                if path and path not in seen:
+                    seen.add(path)
+                    paths.append(path)
 
         for path in paths:
             meta = handler.read_metadata(path)
@@ -882,6 +1144,7 @@ class MainWindow(QMainWindow):
                     "keywords": meta.keywords or "",
                 })
 
+        self._refresh_metadata_panel(force=True)
         self.undo_thread = None
         self.update_ui_state()
 
