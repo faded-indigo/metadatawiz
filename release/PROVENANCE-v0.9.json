@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "project": "HSP Metadata Wizard",
+  "version": "0.9",
+  "tag": "v0.9",
+  "repository": "https://github.com/faded-indigo/metadatawiz",
+  "artifact": {
+    "name": "HSPMetadataWizard-v0.9-windows-x64.exe",
+    "distribution": "GitHub Release asset",
+    "sha256": "490A90811557CCAF502FE7DF20C7BEAF74E1412EA58983D17B1127CC22626668"
+  },
+  "build": {
+    "spec_file": "HSPMetadataWizard.spec",
+    "tool": "PyInstaller 6.9.0",
+    "python": "3.12.2",
+    "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "source": {
+    "release_source_commit": "0825472",
+    "release_notes": "release/RELEASE_NOTES-v0.9.md",
+    "checksums_file": "release/SHA256SUMS.txt"
+  }
+}
