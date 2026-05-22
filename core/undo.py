@@ -34,6 +34,11 @@ class UndoManager:
             return None
         return self._stack.pop()
 
+    def peek_last(self) -> UndoBatch | None:
+        if not self._stack:
+            return None
+        return self._stack[-1]
+
     def clear(self):
         self._stack.clear()
 

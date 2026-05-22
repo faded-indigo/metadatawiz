@@ -159,7 +159,9 @@ class LoaderManager(QObject):
         self._stats = {"total": 0, "warnings": 0, "protected": 0}
 
     def start_loading(self, folder: str):
-        self.stop_loading()
+        if not self.stop_loading():
+            self.error.emit("Previous scan is still stopping. Please try again in a moment.")
+            return
         self.loaded_files = []
         self._worker = LoaderWorker(folder)
         # connect pass-through signals
@@ -172,11 +174,13 @@ class LoaderManager(QObject):
         self._worker.start()
         self.status.emit(f"Scanning folder: {folder}")
 
-    def stop_loading(self):
+    def stop_loading(self) -> bool:
         if self._worker and self._worker.isRunning():
             self._worker.stop()
-            self._worker.wait(2000)
+            if not self._worker.wait(30000):
+                return False
         self._worker = None
+        return True
 
     def is_loading(self) -> bool:
         return bool(self._worker and self._worker.isRunning())

@@ -155,12 +155,13 @@ class WriterWorker(QThread):
         skipped = 0
         failures: List[Dict[str, str]] = []
         journal: List[Tuple[str, Dict[str, str], Dict[str, str]]] = []
+        was_cancelled = False
 
         log_worker_event("Writer", "start", f"{total} file(s)")
 
         for item in (self._files or []):
             if self._cancel:
-                self.cancelled.emit()
+                was_cancelled = True
                 log_worker_event("Writer", "cancelled")
                 break
 
@@ -252,7 +253,16 @@ class WriterWorker(QThread):
             self.file_progress.emit(1, 1, name)
             self.progress.emit(done, total)
 
-        stats = {"total": total, "successes": successes, "skipped": skipped, "failures": len(failures)}
+        stats = {
+            "total": total,
+            "successes": successes,
+            "skipped": skipped,
+            "failures": len(failures),
+            "cancelled": was_cancelled,
+        }
         log_worker_event("Writer", "finished", f"Success: {successes}, Skip: {skipped}, Fail: {len(failures)}")
-        self.status.emit(f"Write complete: {successes} succeeded, {skipped} skipped, {len(failures)} failed.")
+        if was_cancelled:
+            self.status.emit(f"Write cancelled: {successes} succeeded before cancellation.")
+        else:
+            self.status.emit(f"Write complete: {successes} succeeded, {skipped} skipped, {len(failures)} failed.")
         self.finished.emit(stats, failures, journal)

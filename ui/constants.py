@@ -90,6 +90,7 @@ STATUS_LOADED_WITH_WARNINGS = " {} files have naming warnings."
 STATUS_WRITE_START = "Starting write..."
 STATUS_WRITE_COMPLETE = "Applied. Success: {}, Skipped: {}, Failures: {}."
 STATUS_WRITE_CANCELLED = "Write cancelled."
+STATUS_WRITE_PARTIAL = "Partial write before cancellation. Success: {}, Skipped: {}, Failures: {}."
 STATUS_WRITE_FILE = "Writing {}/{}: {}"
 
 STATUS_UNDO_START = "Starting undo..."

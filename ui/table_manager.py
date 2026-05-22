@@ -19,6 +19,7 @@ class FileTableManager(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.table = QTableWidget()
+        self._sorting_before_bulk_load = True
         self.setup_table()
         
     def setup_table(self):
@@ -62,6 +63,15 @@ class FileTableManager(QObject):
     def clear(self):
         """Clear all rows from the table."""
         self.table.setRowCount(0)
+
+    def begin_bulk_load(self):
+        """Pause sorting while rows stream in so cells stay attached to their row."""
+        self._sorting_before_bulk_load = self.table.isSortingEnabled()
+        self.table.setSortingEnabled(False)
+
+    def end_bulk_load(self):
+        """Restore the table sort mode after a streamed load finishes."""
+        self.table.setSortingEnabled(self._sorting_before_bulk_load)
         
     def add_file(self, file_data: dict) -> int:
         """Add a file to the table. Returns row index."""

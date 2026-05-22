@@ -54,6 +54,7 @@ class MainWindow(QMainWindow):
         # Threads
         self.writer_thread: Optional[WriterWorker] = None
         self.undo_thread: Optional[UndoWorker] = None
+        self._active_undo_batch = None
 
         # Info/errors buffers
         self.info_messages: List[str] = []
@@ -495,6 +496,7 @@ class MainWindow(QMainWindow):
         self.pdf_files.append(file_data)
 
     def on_scan_complete(self, files: list):
+        self.table_manager.end_bulk_load()
         self.pdf_files = files
         self.cancel_button.setEnabled(False)
         self.batch_progress.setValue(self.batch_progress.maximum())
@@ -521,6 +523,7 @@ class MainWindow(QMainWindow):
         self.update_ui_state()
 
     def on_loader_error(self, error_msg: str):
+        self.table_manager.end_bulk_load()
         QMessageBox.critical(self, DIALOG_ERROR, error_msg)
         self.cancel_button.setEnabled(False)
         self.add_info(f"{DIALOG_ERROR}: {error_msg}")
@@ -537,7 +540,8 @@ class MainWindow(QMainWindow):
             QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel
         )
         if reply == QMessageBox.StandardButton.Cancel:
-            self.loader_manager.stop_loading()
+            if not self.loader_manager.stop_loading():
+                QMessageBox.warning(self, DIALOG_ERROR, "Scan is still stopping. Please wait and try again.")
             self.add_info(STATUS_OPERATION_CANCELLED)
         else:
             self.has_shown_subfolder_warning = True
@@ -554,7 +558,7 @@ class MainWindow(QMainWindow):
 
     def load_folder_from_input(self):
         folder = self.folder_input.text().strip()
-        if folder and os.path.exists(folder):
+        if folder and os.path.isdir(folder):
             self.load_folder(folder)
         elif folder:
             QMessageBox.warning(self, "Invalid Folder", WARN_INVALID_FOLDER.format(folder))
@@ -564,6 +568,7 @@ class MainWindow(QMainWindow):
         self.folder_input.setText(folder)  # keep UI in sync
         self.rescan_button.setEnabled(True) # Enable rescan button
         self.has_shown_subfolder_warning = False   # Reset warning state
+        self.table_manager.begin_bulk_load()
         self.table_manager.clear() # Clear the table
         self.pdf_files.clear() # Clear the internal file list
         self.info_messages.clear() # Clear previous info messages
@@ -760,6 +765,8 @@ class MainWindow(QMainWindow):
             return
         normalized = self._normalize_keywords_or_warn(text)
         self.keywords_input.setText(normalized)
+        if normalized != text:
+            self._on_field_edited("keywords")
 
     def ensure_folder_shib(self):
         """
@@ -1020,11 +1027,19 @@ class MainWindow(QMainWindow):
 
     def _on_write_finished(self, stats: dict, failures: List[dict], journal: List):
         self.undo_manager.push_batch(journal)
-        self.add_info(STATUS_WRITE_COMPLETE.format(
-            stats.get("successes", 0),
-            stats.get("skipped", 0),
-            stats.get("failures", 0),
-        ))
+        if stats.get("cancelled"):
+            self.add_info(STATUS_WRITE_CANCELLED)
+            self.add_info(STATUS_WRITE_PARTIAL.format(
+                stats.get("successes", 0),
+                stats.get("skipped", 0),
+                stats.get("failures", 0),
+            ))
+        else:
+            self.add_info(STATUS_WRITE_COMPLETE.format(
+                stats.get("successes", 0),
+                stats.get("skipped", 0),
+                stats.get("failures", 0),
+            ))
         self.last_failures = failures[:]  # remember for later
         if failures:
             self.show_errors_dialog(failures)  # auto-open on errors
@@ -1076,11 +1091,12 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, DIALOG_INFORMATION, MSG_NO_UNDO)
             return
 
-        batch = self.undo_manager.pop_last()
+        batch = self.undo_manager.peek_last()
         if not batch or not batch.changes:
             QMessageBox.information(self, DIALOG_INFORMATION, MSG_UNDO_EMPTY)
             return
 
+        self._active_undo_batch = batch
         self.undo_thread = UndoWorker(batch, self)
         self.undo_thread.progress.connect(self._on_undo_progress)
         self.undo_thread.file_progress.connect(self._on_undo_file_progress)
@@ -1111,11 +1127,13 @@ class MainWindow(QMainWindow):
     def _on_undo_error(self, msg: str):
         QMessageBox.critical(self, DIALOG_UNDO_ERROR, msg)
         self.add_info(f"{DIALOG_UNDO_ERROR}: {msg}")
+        self._active_undo_batch = None
         self.undo_thread = None
         self.update_ui_state()
 
     def _on_undo_cancelled(self):
         self.add_info(STATUS_UNDO_CANCELLED)
+        self._active_undo_batch = None
         self.undo_thread = None
         self.update_ui_state()
 
@@ -1125,6 +1143,8 @@ class MainWindow(QMainWindow):
         ))
         if failures:
             self.show_errors_dialog(failures)
+        else:
+            self.undo_manager.pop_last()
 
         # Refresh everything (simple strategy)
         try:
@@ -1155,6 +1175,7 @@ class MainWindow(QMainWindow):
                 })
 
         self._refresh_metadata_panel(force=True)
+        self._active_undo_batch = None
         self.undo_thread = None
         self.update_ui_state()
 
@@ -1184,7 +1205,10 @@ class MainWindow(QMainWindow):
         if self.undo_thread and self.undo_thread.isRunning():
             self.undo_thread.cancel()
             return
-        self.loader_manager.stop_loading()
+        if not self.loader_manager.stop_loading():
+            QMessageBox.warning(self, DIALOG_ERROR, "Operation is still stopping. Please wait and try again.")
+            return
+        self.table_manager.end_bulk_load()
         self.cancel_button.setEnabled(False)
         self.add_info(STATUS_OPERATION_CANCELLED)
 
@@ -1210,12 +1234,18 @@ class MainWindow(QMainWindow):
 
         if writer_active and self.writer_thread:
             self.writer_thread.cancel()
-            self.writer_thread.wait(5000)
+            if not self.writer_thread.wait(35000):
+                event.ignore()
+                return
         if undo_active and self.undo_thread:
             self.undo_thread.cancel()
-            self.undo_thread.wait(5000)
+            if not self.undo_thread.wait(35000):
+                event.ignore()
+                return
         if loader_active:
-            self.loader_manager.stop_loading()
+            if not self.loader_manager.stop_loading():
+                event.ignore()
+                return
         event.accept()
 
     def show_help(self):

@@ -2,7 +2,7 @@
 
 Batch edit PDF metadata (Title, Author, Subject, Keywords) safely on Windows.
 
-Current app version: `0.8` (`core/version.py`).
+Current app version: `0.9` (`core/version.py`).
 
 ## Scope And Platform
 
@@ -26,7 +26,7 @@ Current app version: `0.8` (`core/version.py`).
 - Does not provide cloud sync or remote services.
 - Does not process non-PDF files.
 
-## v0.8 Interaction Model
+## v0.9 Interaction Model
 
 - Only checked rows are actionable batch selection.
 - Clicked row is preview-only when nothing is checked.
