@@ -173,6 +173,88 @@ class MetadataHandler:
     Clearing must use clear_metadata_fields().
     """
 
+    # -------------------- shared write helper ---------------------------------
+
+    def _run_exiftool_on_copy(
+        self,
+        filepath: str,
+        cmd_args: List[str],
+        timeout_error_msg: str,
+        generic_error_prefix: str,
+    ) -> Tuple[bool, str]:
+        """
+        Safe-write pattern: copy original → run ExifTool on temp copy →
+        fsync → atomic replace back to original path.
+
+        Args:
+            filepath:            Absolute path to the PDF to modify.
+            cmd_args:            ExifTool arguments inserted between the executable
+                                 and the ``-- <tmp>`` path suffix.
+            timeout_error_msg:   Message returned on subprocess timeout.
+            generic_error_prefix: Prefix for the message on unexpected exceptions.
+
+        Returns:
+            (True, "") on success; (False, error_message) on any failure.
+        """
+        folder = os.path.dirname(os.path.abspath(filepath)) or "."
+        fd, temp_path = tempfile.mkstemp(suffix=".pdf", dir=folder)
+        os.close(fd)
+
+        src = _safe_path(filepath)
+        tmp = _safe_path(temp_path)
+
+        try:
+            shutil.copy2(src, tmp)
+
+            cmd = [self.exiftool_path, "-overwrite_original"] + cmd_args + ["--", tmp]
+            res = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=self.timeout_write,
+                creationflags=_SUBPROC_FLAGS,
+            )
+            if res.returncode != 0:
+                try:
+                    os.remove(tmp)
+                except Exception:
+                    pass
+                return False, f"ExifTool error: {res.stderr.strip() or 'unknown'}"
+
+            _fsync_path(tmp)
+            try:
+                _replace_with_retries(tmp, src)
+            except PermissionError:
+                try:
+                    os.remove(tmp)
+                except Exception:
+                    pass
+                return False, "The PDF appears to be open or locked. Close the file and retry."
+            except OSError as e:
+                try:
+                    os.remove(tmp)
+                except Exception:
+                    pass
+                return False, f"Error replacing file: {e}"
+
+            _fsync_path(src)
+            return True, ""
+
+        except subprocess.TimeoutExpired:
+            try:
+                if os.path.exists(tmp):
+                    os.remove(tmp)
+            except Exception:
+                pass
+            return False, timeout_error_msg
+        except Exception as e:
+            try:
+                if os.path.exists(tmp):
+                    os.remove(tmp)
+            except Exception:
+                pass
+            return False, f"{generic_error_prefix}: {e}"
+
     _FIELD_MAP = {
         "title": "Title",
         "author": "Author",
@@ -351,80 +433,25 @@ class MetadataHandler:
         if not filtered:
             return True, ""
 
-        folder = os.path.dirname(os.path.abspath(filepath)) or "."
-        fd, temp_path = tempfile.mkstemp(suffix=".pdf", dir=folder)
-        os.close(fd)
+        # Build ExifTool tag arguments.
+        cmd_args: List[str] = []
+        for tag, value in filtered.items():
+            # Special handling for Keywords: write each token as a separate list item.
+            # This prevents the whole comma-joined string from being treated as one value
+            # (which some tools then display with surrounding quotes).
+            if tag.lower().endswith("keywords"):
+                tokens = [t.strip() for t in value.split(",") if t.strip()]
+                for t in tokens:
+                    cmd_args.append(f"-{tag}={t}")
+            else:
+                cmd_args.append(f"-{tag}={value}")
 
-        src = _safe_path(filepath)
-        tmp = _safe_path(temp_path)
-
-        try:
-            shutil.copy2(src, tmp)
-
-            # Build exiftool command
-            cmd = [self.exiftool_path, "-overwrite_original"]
-
-            for tag, value in filtered.items():
-                # Special handling for Keywords: write each token as a separate list item.
-                # This prevents the whole comma-joined string from being treated as one value
-                # (which some tools then display with surrounding quotes).
-                if tag.lower().endswith("keywords"):
-                    tokens = [t.strip() for t in value.split(",") if t.strip()]
-                    # If there are tokens, set the list explicitly via multiple -Keywords=
-                    for t in tokens:
-                        cmd.append(f"-{tag}={t}")
-                else:
-                    cmd.append(f"-{tag}={value}")
-
-            cmd.extend(["--", tmp])
-
-            res = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=self.timeout_write,
-                creationflags=_SUBPROC_FLAGS,
-            )
-            if res.returncode != 0:
-                try:
-                    os.remove(tmp)
-                except Exception:
-                    pass
-                return False, f"ExifTool error: {res.stderr.strip() or 'unknown'}"
-
-            _fsync_path(tmp)
-            try:
-                _replace_with_retries(tmp, src)
-            except PermissionError:
-                try:
-                    os.remove(tmp)
-                except Exception:
-                    pass
-                return False, "The PDF appears to be open or locked. Close the file and retry."
-            except OSError as e:
-                try:
-                    os.remove(tmp)
-                except Exception:
-                    pass
-                return False, f"Error replacing file: {e}"
-
-            _fsync_path(src)
-            return True, ""
-
-        except subprocess.TimeoutExpired:
-            try:
-                if os.path.exists(tmp):
-                    os.remove(tmp)
-            except Exception:
-                pass
-            return False, "Timeout writing metadata"
-        except Exception as e:
-            try:
-                if os.path.exists(tmp):
-                    os.remove(tmp)
-            except Exception:
-                pass
-            return False, f"Error writing metadata: {e}"
+        return self._run_exiftool_on_copy(
+            filepath,
+            cmd_args,
+            timeout_error_msg="Timeout writing metadata",
+            generic_error_prefix="Error writing metadata",
+        )
 
     # ------------------------------- clear ------------------------------------
 
@@ -461,67 +488,12 @@ class MetadataHandler:
         if not tags:
             return True, ""  # nothing to clear
 
-        # Prepare a temp copy in the same folder for atomic replace
-        folder = os.path.dirname(os.path.abspath(filepath)) or "."
-        fd, temp_path = tempfile.mkstemp(suffix=".pdf", dir=folder)
-        os.close(fd)
+        # Build ExifTool tag arguments: -Tag= clears the value.
+        cmd_args = [f"-{tag}=" for tag in tags]
 
-        src = _safe_path(filepath)
-        tmp = _safe_path(temp_path)
-
-        try:
-            shutil.copy2(src, tmp)
-
-            # Build ExifTool command: -Tag= clears the value
-            cmd = [self.exiftool_path, "-overwrite_original"]
-            for tag in tags:
-                cmd.append(f"-{tag}=")
-            cmd.extend(["--", tmp])
-
-            res = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=self.timeout_write,
-                creationflags=_SUBPROC_FLAGS,
-            )
-            if res.returncode != 0:
-                try:
-                    os.remove(tmp)
-                except Exception:
-                    pass
-                return False, f"ExifTool error: {res.stderr.strip() or 'unknown'}"
-
-            _fsync_path(tmp)
-            try:
-                _replace_with_retries(tmp, src)
-            except PermissionError:
-                try:
-                    os.remove(tmp)
-                except Exception:
-                    pass
-                return False, "The PDF appears to be open or locked. Close the file and retry."
-            except OSError as e:
-                try:
-                    os.remove(tmp)
-                except Exception:
-                    pass
-                return False, f"Error replacing file: {e}"
-
-            _fsync_path(src)
-            return True, ""
-
-        except subprocess.TimeoutExpired:
-            try:
-                if os.path.exists(tmp):
-                    os.remove(tmp)
-            except Exception:
-                pass
-            return False, "Timeout clearing metadata"
-        except Exception as e:
-            try:
-                if os.path.exists(tmp):
-                    os.remove(tmp)
-            except Exception:
-                pass
-            return False, f"Error clearing metadata: {e}"
+        return self._run_exiftool_on_copy(
+            filepath,
+            cmd_args,
+            timeout_error_msg="Timeout clearing metadata",
+            generic_error_prefix="Error clearing metadata",
+        )

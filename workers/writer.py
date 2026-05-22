@@ -166,6 +166,10 @@ class WriterWorker(QThread):
 
             path = self._resolve_path(item)
             name = os.path.basename(path) if path else "(unknown)"
+
+            # Announce start of this file so the progress label updates immediately.
+            self.file_progress.emit(0, 1, name)
+
             if not path or not os.path.exists(path):
                 failures.append({"filename": name, "filepath": path, "error": "File not found"})
                 done += 1
@@ -245,7 +249,7 @@ class WriterWorker(QThread):
                 journal.append((path, old_values, new_values))
 
             done += 1
-            self.file_progress.emit(1, 1, name)  # one step per file
+            self.file_progress.emit(1, 1, name)
             self.progress.emit(done, total)
 
         stats = {"total": total, "successes": successes, "skipped": skipped, "failures": len(failures)}

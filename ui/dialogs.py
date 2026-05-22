@@ -4,14 +4,14 @@ from __future__ import annotations
 from typing import List
 import tempfile
 from pathlib import Path
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QWidget, QTextEdit, QHBoxLayout, QApplication
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QTextEdit, QHBoxLayout, QApplication
 from PyQt6.QtCore import Qt, QUrl
 from infra.bundled import resource_path
 from core.version import APP_NAME, __version__ as APP_VERSION
 from PyQt6.QtGui import QPixmap, QIcon, QDesktopServices
 from ui.constants import (
     MAIN_WINDOW_TITLE, DIALOG_ABOUT, BTN_CLOSE,
-    TITLECARD_PROCEED, TITLECARD_AUTHOR, TITLECARD_VERSION, TITLECARD_HELP, TITLECARD_LICENSE
+    TITLECARD_AUTHOR, TITLECARD_VERSION, TITLECARD_HELP, TITLECARD_LICENSE
 )
 
 
@@ -44,77 +44,6 @@ def open_help_page() -> bool:
         if Path(raw_path).exists():
             return QDesktopServices.openUrl(QUrl.fromLocalFile(raw_path))
         return False
-
-
-class TitleCardDialog(QDialog):
-    """
-    Modal title card shown before the main window.
-    - Centered square icon
-    - Large Proceed button
-    - Inline Help / License links opening local HTML files
-    - Author and Version labels
-    """
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.setWindowTitle(MAIN_WINDOW_TITLE)
-        self.setWindowModality(Qt.WindowModality.ApplicationModal)
-        self.setWindowFlag(Qt.WindowType.Dialog)
-        self.setMinimumWidth(420)
-        self.setMinimumHeight(380)
-        self.setWindowIcon(QIcon(resource_path("resources/app.ico")))
-
-        # Icon (centered)
-        icon_label = QLabel(self)
-        pix = QPixmap(resource_path("resources/app.ico"))
-        if not pix.isNull():
-            icon_label.setPixmap(pix.scaled(128, 128, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
-        icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        # Proceed button
-        proceed_btn = QPushButton(TITLECARD_PROCEED, self)
-        proceed_btn.setMinimumHeight(40)
-        proceed_btn.setDefault(True)
-        proceed_btn.clicked.connect(self.accept)
-
-        # Help / License links (inline)
-        help_link = QLabel(self)
-        help_link.setTextFormat(Qt.TextFormat.RichText)
-        help_link.setText(f'<a href="local:help">{TITLECARD_HELP}</a>')
-        help_link.setOpenExternalLinks(False)
-        help_link.linkActivated.connect(lambda _href: open_help_page())
-
-        license_link = QLabel(self)
-        license_link.setTextFormat(Qt.TextFormat.RichText)
-        license_link.setText(f'<a href="local:license">{TITLECARD_LICENSE}</a>')
-        license_link.setOpenExternalLinks(False)
-        license_link.linkActivated.connect(lambda _href: QDesktopServices.openUrl(QUrl.fromLocalFile(resource_path("resources/license.html"))))
-
-        links_row = QHBoxLayout()
-        links_row.addStretch(1)
-        links_row.addWidget(help_link)
-        links_row.addSpacing(12)
-        links_row.addWidget(license_link)
-        links_row.addStretch(1)
-
-        # Author / Version
-        author_label = QLabel(TITLECARD_AUTHOR, self)
-        author_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        version_label = QLabel(TITLECARD_VERSION, self)
-        version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        # Layout
-        root = QVBoxLayout(self)
-        root.addStretch(1)
-        root.addWidget(icon_label)
-        root.addSpacing(16)
-        root.addWidget(proceed_btn, alignment=Qt.AlignmentFlag.AlignHCenter)
-        root.addSpacing(12)
-        root.addLayout(links_row)
-        root.addSpacing(8)
-        root.addWidget(author_label)
-        root.addWidget(version_label)
-        root.addStretch(1)
-        self.setLayout(root)
 
 
 class AboutDialog(QDialog):

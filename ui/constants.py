@@ -14,6 +14,7 @@ TOOLBAR_HELP = "Help"
 MENU_HELP = "Help"
 MENU_HELP_CONTENTS = "Help"
 MENU_ABOUT = "About"
+MENU_RESET_CONFIRMATIONS = "Reset 'Don't ask again' confirmations…"
 
 DIALOG_ERROR = "Error"
 DIALOG_ERRORS = "Errors"
@@ -23,7 +24,6 @@ DIALOG_UNDO_ERROR = "Undo Error"
 DIALOG_ABOUT = "About"
 
 # ===== Title Card =====
-TITLECARD_PROCEED = "Proceed"
 TITLECARD_AUTHOR = "Author: kai ilchmann"
 TITLECARD_VERSION = f"Version: v{APP_VERSION}"
 TITLECARD_HELP = "Help"
@@ -215,7 +215,7 @@ ERROR_PROTECTED_SKIP = "Password protected (skipped)"
 ERROR_PROTECTED_CORRUPTED = "Protected/Corrupted"
 
 # ===== Help Text =====
-HELP_TEXT = """HSP Metadata Wizard v1
+HELP_TEXT = f"""{APP_NAME} v{APP_VERSION}
 
 1. Select a folder containing PDFs
 2. Select files to modify

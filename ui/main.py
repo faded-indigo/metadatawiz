@@ -118,6 +118,15 @@ class MainWindow(QMainWindow):
         about_action.triggered.connect(self.show_about)
         help_menu.addAction(about_action)
 
+        help_menu.addSeparator()
+
+        reset_action = QAction(MENU_RESET_CONFIRMATIONS, self)
+        reset_action.setToolTip(
+            "Clear all saved 'Don't ask again' choices so confirmation dialogs reappear."
+        )
+        reset_action.triggered.connect(self.reset_confirmations)
+        help_menu.addAction(reset_action)
+
     def build_source_group(self) -> QGroupBox:
         group = QGroupBox(GROUP_SOURCE)
         v = QVBoxLayout(group)
@@ -558,6 +567,7 @@ class MainWindow(QMainWindow):
         self.table_manager.clear() # Clear the table
         self.pdf_files.clear() # Clear the internal file list
         self.info_messages.clear() # Clear previous info messages
+        self.undo_manager.clear()  # Undo history is folder-scoped; clear on new load
 
         self.add_info(STATUS_LOADING_FOLDER.format(folder)) # Reset progress
         self.cancel_button.setEnabled(True) # Start cancel button
@@ -1215,6 +1225,44 @@ class MainWindow(QMainWindow):
 
     def show_about(self):
         AboutDialog(self).exec()
+
+    def reset_confirmations(self):
+        """Clear all persisted 'Don't ask again' choices from QSettings."""
+        # Collect keys under the 'confirm/' group
+        self.settings.beginGroup("confirm")
+        keys = self.settings.childKeys()
+        # Also collect sub-groups (e.g. confirm/multi/*)
+        groups = self.settings.childGroups()
+        self.settings.endGroup()
+
+        total = len(keys)
+        for group in groups:
+            self.settings.beginGroup(f"confirm/{group}")
+            total += len(self.settings.childKeys())
+            self.settings.endGroup()
+
+        if total == 0:
+            QMessageBox.information(
+                self, DIALOG_INFORMATION,
+                "No saved confirmations to reset."
+            )
+            return
+
+        reply = QMessageBox.question(
+            self, CONFIRM_HEADER,
+            f"Reset {total} saved 'Don't ask again' choice(s)?\n"
+            "Confirmation dialogs will reappear for all actions.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        self.settings.remove("confirm")
+        QMessageBox.information(
+            self, DIALOG_INFORMATION,
+            "Confirmations reset. All dialogs will ask again."
+        )
 
 def main():
     app = QApplication(sys.argv)
